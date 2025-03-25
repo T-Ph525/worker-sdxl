@@ -5,6 +5,7 @@ ENV HF_HUB_ENABLE_HF_TRANSFER=0
 
 # Install Python dependencies (Worker Template)
 COPY builder/requirements.txt /requirements.txt
+RUN apt update && apt install git
 RUN python3.11 -m pip install --upgrade pip && \
     python3.11 -m pip install --upgrade -r /requirements.txt --no-cache-dir && \
     rm /requirements.txt
