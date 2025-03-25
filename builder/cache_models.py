@@ -1,12 +1,10 @@
-# builder/model_fetcher.py
-
 import torch
-from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, AutoencoderKL
+from diffusers import StableDiffusionXLInpaintPipeline, AutoencoderKL
 
 
 def fetch_pretrained_model(model_class, model_name, **kwargs):
     '''
-    Fetches a pretrained model from the HuggingFace model hub.
+    Fetches a pretrained model from the HuggingFace model hub with retry logic.
     '''
     max_retries = 3
     for attempt in range(max_retries):
@@ -15,14 +13,15 @@ def fetch_pretrained_model(model_class, model_name, **kwargs):
         except OSError as err:
             if attempt < max_retries - 1:
                 print(
-                    f"Error encountered: {err}. Retrying attempt {attempt + 1} of {max_retries}...")
+                    f"Error encountered: {err}. Retrying attempt {attempt + 1} of {max_retries}..."
+                )
             else:
                 raise
 
 
 def get_diffusion_pipelines():
     '''
-    Fetches the Stable Diffusion XL pipelines from the HuggingFace model hub.
+    Fetches the Stable Diffusion XL inpainting pipeline for all use cases.
     '''
     common_args = {
         "torch_dtype": torch.float16,
@@ -30,16 +29,15 @@ def get_diffusion_pipelines():
         "use_safetensors": True
     }
 
-    pipe = fetch_pretrained_model(StableDiffusionXLPipeline,
-                                  "stabilityai/stable-diffusion-xl-base-1.0", **common_args)
-    vae = fetch_pretrained_model(
-        AutoencoderKL, "madebyollin/sdxl-vae-fp16-fix", **{"torch_dtype": torch.float16}
+    inpaint_pipe = fetch_pretrained_model(
+        StableDiffusionXLInpaintPipeline, "mrcuddle/urpm-inpaint-sdxl", **common_args
     )
-    print("Loaded VAE")
-    refiner = fetch_pretrained_model(StableDiffusionXLImg2ImgPipeline,
-                                     "stabilityai/stable-diffusion-xl-refiner-1.0", **common_args)
+    vae = fetch_pretrained_model(
+        AutoencoderKL, "madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16
+    )
 
-    return pipe, refiner, vae
+    print("Loaded inpainting pipeline for all use cases successfully.")
+    return inpaint_pipe, vae
 
 
 if __name__ == "__main__":
