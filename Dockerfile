@@ -1,18 +1,29 @@
 # Base image
 FROM runpod/base:0.4.2-cuda11.8.0
 
+# Environment variables
 ENV HF_HUB_ENABLE_HF_TRANSFER=0
+ENV PYTHONUNBUFFERED=1
 
-# Install Python dependencies (Worker Template)
+# Set working directory
+WORKDIR /app
+
+# Install dependencies
 COPY builder/requirements.txt /requirements.txt
-RUN apt update && apt install git
-RUN python3.11 -m pip install --upgrade pip && \
-    python3.11 -m pip install --upgrade -r /requirements.txt --no-cache-dir && \
+RUN apt update && \
+    apt install -y --no-install-recommends git && \
+    rm -rf /var/lib/apt/lists/* && \
+    python3.11 -m pip install --upgrade pip && \
+    python3.11 -m pip install --prefer-binary --upgrade -r /requirements.txt --no-cache-dir && \
     rm /requirements.txt
 
-# Cache Models
-RUN python3.11 builder/cache_models.py
-# Add src files (Worker Template)
-ADD src .
+# Cache models
+COPY builder/cache_models.py /app/cache_models.py
+RUN python3.11 /app/cache_models.py
 
-CMD python3.11 -u /rp_handler.py
+# Add source files
+ADD src /app/
+
+# Set execution command
+CMD ["python3.11", "-u", "/app/rp_handler.py"]
+
